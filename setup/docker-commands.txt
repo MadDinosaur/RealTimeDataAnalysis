@@ -1,0 +1,29 @@
+# START ZOOKEEPER
+docker run -it --name zookeeper -p 2181:2181 -p 2888:2888 -p 3888:3888 quay.io/debezium/zookeeper:2.1
+
+# START KAFKA
+docker run -it --name kafka -p 9092:9092 --link zookeeper:zookeeper quay.io/debezium/kafka:2.1
+
+# START MYSQL DATABASE
+docker run -it --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=debezium -e MYSQL_USER=mysqluser -e MYSQL_PASSWORD=mysqlpw quay.io/debezium/example-mysql:2.1
+-- 1. transfer dataset files to mysql container filesystem
+-- 2. run SQL loading script
+
+# START DEBEZIUM CONNECTOR (TO AZURE EVENT HUBS)
+docker run -it --name connect -p 8083:8083 -e BOOTSTRAP_SERVERS=pesti-project-ev.servicebus.windows.net:9093 -e GROUP_ID=1 -e CONFIG_STORAGE_TOPIC=my_connect_configs -e OFFSET_STORAGE_TOPIC=my_connect_offsets -e STATUS_STORAGE_TOPIC=my_connect_statuses --link kafka:kafka --link mysql:mysql quay.io/debezium/connect:2.1
+-- 1. edit container file "kafka/connect-distributed.properties" to include Azure authentication
+https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-kafka-connect-tutorial#configure-kafka-connect-for-event-hubs
+or
+-- 2. alternative: run connector locally
+docker run -it --name connect-local -p 8083:8083 -e GROUP_ID=1 -e CONFIG_STORAGE_TOPIC=my_connect_configs -e OFFSET_STORAGE_TOPIC=my_connect_offsets -e STATUS_STORAGE_TOPIC=my_connect_statuses --link kafka:kafka --link mysql:mysql quay.io/debezium/connect:2.1
+
+# SEND REQUEST TO CREATE TOPIC
+-- 1. run file "create-connector.bat"
+-- 2. verify connection with the following commands
+curl -H "Accept:application/json" localhost:8083/connectors/
+curl -i -X GET -H "Accept:application/json" localhost:8083/connectors/olist-connector
+-- 3. verify existing kafka topics with the following command
+/kafka/bin/kafka-topics.sh --list --bootstrap-server <search for broker ip in kafka logs>
+
+# OPTIONAL: RUN LOCAL WATCHER TO KEEP TRACK OF ACTIVITY
+docker run -it --name watcher --link zookeeper:zookeeper --link kafka:kafka quay.io/debezium/kafka:2.1 watch-topic -a -k <topic_name>

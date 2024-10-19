@@ -1,0 +1,11 @@
+## Authentication for storage account
+1. Define storage account key and scope at adb-<id>.azuredatabricks.net#secrets/createScope
+Scope Name: pesti-project-scope
+Manage Principal: All Users
+Paste information from Key Vault
+
+2. Add following configuration to cluster:
+fs.azure.account.key.pestiprojectdb.dfs.core.windows.net {{secrets/pesti-project-scope/storage-account}}
+
+## Libraries
+com.microsoft.azure:azure-eventhubs-spark_2.12:2.3.22
