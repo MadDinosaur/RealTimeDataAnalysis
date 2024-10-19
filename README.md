@@ -8,7 +8,7 @@ This project addresses the development of a real-time data analysis architecture
 The main objective of this project is to explore the advantages of capturing and processing data in real time, as well as its degree of suitability for the selected application.
 
 ### Architecture
-![Architecture](documentation\Architecture.png)
+![Architecture](documentation/Architecture.png)
 
 ## Project Documentation
 
